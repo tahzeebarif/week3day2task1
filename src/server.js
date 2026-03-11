@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const swaggerUi = require('swagger-ui-express');
 const connectDB = require('./config/db');
 const swaggerSpec = require('./docs/swagger');
 const authRoutes = require('./routes/authRoutes');
@@ -23,27 +22,43 @@ app.use((req, res, next) => {
   next();
 });
 
-if (process.env.NODE_ENV === 'development') {
-  app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-    next();
-  });
-}
-
 // ─── Swagger JSON ─────────────────────────────────────────────────────────────
 app.get('/api/docs/swagger.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
-  res.send(swaggerSpec);
+  res.json(swaggerSpec);
 });
 
-// ─── Swagger UI ───────────────────────────────────────────────────────────────
-app.use('/api/docs', swaggerUi.serve);
-app.get('/api/docs', swaggerUi.setup(swaggerSpec, {
-  explorer: true,
-  swaggerUrl: '/api/docs/swagger.json',
-  customCss: `.swagger-ui .topbar { background-color: #1a1a2e; }`,
-  customSiteTitle: 'Task Manager API Docs',
-}));
+// ─── Swagger UI (CDN - works on Vercel) ───────────────────────────────────────
+app.get('/api/docs', (req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Task Manager API Docs</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" >
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"> </script>
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js"> </script>
+    <script>
+      window.onload = function() {
+        SwaggerUIBundle({
+          url: "/api/docs/swagger.json",
+          dom_id: '#swagger-ui',
+          presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+          layout: "StandaloneLayout",
+          persistAuthorization: true,
+        })
+      }
+    </script>
+  </body>
+</html>
+  `);
+});
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
