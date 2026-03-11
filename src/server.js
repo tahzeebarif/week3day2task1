@@ -9,11 +9,11 @@ const taskRoutes = require('./routes/taskRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-
+// ─── Database ─────────────────────────────────────────────────────────────────
 connectDB();
 
-
-app.use(express.json({ limit: '10kb' })); 
+// ─── Middlewares ──────────────────────────────────────────────────────────────
+app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
@@ -23,7 +23,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Request logger (development only)
 if (process.env.NODE_ENV === 'development') {
   app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
@@ -73,7 +72,6 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
 
-  // Mongoose validation error
   if (err.name === 'ValidationError') {
     const messages = Object.values(err.errors).map((e) => e.message);
     return res.status(422).json({
@@ -83,7 +81,6 @@ app.use((err, req, res, next) => {
     });
   }
 
-  // Mongoose cast error (invalid ObjectId)
   if (err.name === 'CastError') {
     return res.status(400).json({
       success: false,
@@ -97,27 +94,29 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ─── Start Server ─────────────────────────────────────────────────────────────
-const server = app.listen(PORT, () => {
-  console.log('\n╔════════════════════════════════════╗');
-  console.log(`║  Task Manager API v2               ║`);
-  console.log(`║  Server: http://localhost:${PORT}     ║`);
-  console.log(`║  Docs:   http://localhost:${PORT}/api/docs ║`);
-  console.log('╚════════════════════════════════════╝\n');
-});
-
-// ─── Graceful Shutdown ────────────────────────────────────────────────────────
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  server.close(() => {
-    console.log('Server closed.');
-    process.exit(0);
+// ─── Start Server (Local only) ────────────────────────────────────────────────
+if (process.env.NODE_ENV !== 'production') {
+  const server = app.listen(PORT, () => {
+    console.log('\n╔════════════════════════════════════╗');
+    console.log(`║  Task Manager API v2               ║`);
+    console.log(`║  Server: http://localhost:${PORT}     ║`);
+    console.log(`║  Docs:   http://localhost:${PORT}/api/docs ║`);
+    console.log('╚════════════════════════════════════╝\n');
   });
-});
 
-process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Rejection:', err.message);
-  server.close(() => process.exit(1));
-});
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received. Shutting down gracefully...');
+    server.close(() => {
+      console.log('Server closed.');
+      process.exit(0);
+    });
+  });
 
+  process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Rejection:', err.message);
+    server.close(() => process.exit(1));
+  });
+}
+
+// ─── Export for Vercel ────────────────────────────────────────────────────────
 module.exports = app;

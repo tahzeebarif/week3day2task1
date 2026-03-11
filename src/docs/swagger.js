@@ -30,6 +30,10 @@ A production-ready backend with:
     },
     servers: [
       {
+        url: 'https://day-2-task-1.vercel.app',
+        description: 'Production server',
+      },
+      {
         url: 'http://localhost:5000',
         description: 'Development server',
       },
