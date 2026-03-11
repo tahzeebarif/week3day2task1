@@ -30,20 +30,20 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
+// ─── Swagger JSON ─────────────────────────────────────────────────────────────
+app.get('/api/docs/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
 // ─── Swagger UI ───────────────────────────────────────────────────────────────
-app.use(
-  '/api/docs',
-  swaggerUi.serve,
-  swaggerUi.setup(swaggerSpec, {
-    explorer: true,
-    customCss: `
-      .swagger-ui .topbar { background-color: #1a1a2e; }
-      .swagger-ui .topbar-wrapper .link span { display: none; }
-      .swagger-ui .topbar-wrapper::after { content: 'Task Manager API v2'; color: white; font-size: 1.2rem; font-weight: bold; }
-    `,
-    customSiteTitle: 'Task Manager API Docs',
-  })
-);
+app.use('/api/docs', swaggerUi.serve);
+app.get('/api/docs', swaggerUi.setup(swaggerSpec, {
+  explorer: true,
+  swaggerUrl: '/api/docs/swagger.json',
+  customCss: `.swagger-ui .topbar { background-color: #1a1a2e; }`,
+  customSiteTitle: 'Task Manager API Docs',
+}));
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
@@ -74,18 +74,11 @@ app.use((err, req, res, next) => {
 
   if (err.name === 'ValidationError') {
     const messages = Object.values(err.errors).map((e) => e.message);
-    return res.status(422).json({
-      success: false,
-      message: 'Validation error',
-      errors: messages,
-    });
+    return res.status(422).json({ success: false, message: 'Validation error', errors: messages });
   }
 
   if (err.name === 'CastError') {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid ID format.',
-    });
+    return res.status(400).json({ success: false, message: 'Invalid ID format.' });
   }
 
   res.status(err.status || 500).json({
@@ -97,26 +90,16 @@ app.use((err, req, res, next) => {
 // ─── Start Server (Local only) ────────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'production') {
   const server = app.listen(PORT, () => {
-    console.log('\n╔════════════════════════════════════╗');
-    console.log(`║  Task Manager API v2               ║`);
-    console.log(`║  Server: http://localhost:${PORT}     ║`);
-    console.log(`║  Docs:   http://localhost:${PORT}/api/docs ║`);
-    console.log('╚════════════════════════════════════╝\n');
+    console.log(`\n  Task Manager API v2`);
+    console.log(`  Server: http://localhost:${PORT}`);
+    console.log(`  Docs:   http://localhost:${PORT}/api/docs\n`);
   });
 
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM received. Shutting down gracefully...');
-    server.close(() => {
-      console.log('Server closed.');
-      process.exit(0);
-    });
-  });
-
+  process.on('SIGTERM', () => server.close(() => process.exit(0)));
   process.on('unhandledRejection', (err) => {
     console.error('Unhandled Rejection:', err.message);
     server.close(() => process.exit(1));
   });
 }
 
-// ─── Export for Vercel ────────────────────────────────────────────────────────
 module.exports = app;

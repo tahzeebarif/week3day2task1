@@ -22,14 +22,8 @@ A production-ready backend with:
       `,
     },
     servers: [
-      {
-        url: 'https://day-2-task-1.vercel.app',
-        description: 'Production server',
-      },
-      {
-        url: 'http://localhost:5000',
-        description: 'Development server',
-      },
+      { url: 'https://day-2-task-1.vercel.app', description: 'Production server' },
+      { url: 'http://localhost:5000', description: 'Development server' },
     ],
     components: {
       securitySchemes: {
@@ -37,7 +31,6 @@ A production-ready backend with:
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
-          description: 'Enter your JWT token. Example: Bearer eyJhbGci...',
         },
       },
       schemas: {
@@ -55,9 +48,9 @@ A production-ready backend with:
           type: 'object',
           required: ['name', 'email', 'password'],
           properties: {
-            name: { type: 'string', minLength: 2, maxLength: 50, example: 'Jane Doe' },
+            name: { type: 'string', example: 'Jane Doe' },
             email: { type: 'string', format: 'email', example: 'jane@example.com' },
-            password: { type: 'string', minLength: 6, example: 'secret123' },
+            password: { type: 'string', example: 'secret123' },
           },
         },
         LoginInput: {
@@ -100,8 +93,8 @@ A production-ready backend with:
           type: 'object',
           required: ['title'],
           properties: {
-            title: { type: 'string', maxLength: 100, example: 'Build login page' },
-            description: { type: 'string', maxLength: 500, example: 'Create the user auth flow' },
+            title: { type: 'string', example: 'Build login page' },
+            description: { type: 'string', example: 'Create the user auth flow' },
             status: { type: 'string', enum: ['pending', 'in-progress', 'completed'], default: 'pending' },
             priority: { type: 'string', enum: ['low', 'medium', 'high'], default: 'medium' },
             dueDate: { type: 'string', format: 'date', example: '2024-12-31', nullable: true },
@@ -110,8 +103,8 @@ A production-ready backend with:
         TaskUpdateInput: {
           type: 'object',
           properties: {
-            title: { type: 'string', maxLength: 100, example: 'Updated task title' },
-            description: { type: 'string', maxLength: 500 },
+            title: { type: 'string', example: 'Updated task title' },
+            description: { type: 'string' },
             status: { type: 'string', enum: ['pending', 'in-progress', 'completed'] },
             priority: { type: 'string', enum: ['low', 'medium', 'high'] },
             dueDate: { type: 'string', format: 'date', nullable: true },
@@ -122,24 +115,6 @@ A production-ready backend with:
           properties: {
             success: { type: 'boolean', example: false },
             message: { type: 'string', example: 'An error occurred.' },
-          },
-        },
-        ValidationErrorResponse: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean', example: false },
-            message: { type: 'string', example: 'Validation failed' },
-            errors: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  field: { type: 'string', example: 'email' },
-                  message: { type: 'string', example: 'Please provide a valid email address' },
-                  value: { type: 'string', example: 'not-an-email' },
-                },
-              },
-            },
           },
         },
       },
@@ -155,11 +130,7 @@ A production-ready backend with:
           tags: ['Auth'],
           requestBody: {
             required: true,
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/RegisterInput' },
-              },
-            },
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/RegisterInput' } } },
           },
           responses: {
             201: { description: 'User registered successfully' },
@@ -174,16 +145,11 @@ A production-ready backend with:
           tags: ['Auth'],
           requestBody: {
             required: true,
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/LoginInput' },
-              },
-            },
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/LoginInput' } } },
           },
           responses: {
             200: { description: 'Login successful' },
             401: { description: 'Invalid credentials' },
-            422: { description: 'Validation error' },
           },
         },
       },
@@ -200,7 +166,7 @@ A production-ready backend with:
       },
       '/api/tasks': {
         get: {
-          summary: 'Get all tasks for logged in user',
+          summary: 'Get all tasks',
           tags: ['Tasks'],
           security: [{ bearerAuth: [] }],
           parameters: [
@@ -220,16 +186,11 @@ A production-ready backend with:
           security: [{ bearerAuth: [] }],
           requestBody: {
             required: true,
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/TaskInput' },
-              },
-            },
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/TaskInput' } } },
           },
           responses: {
             201: { description: 'Task created successfully' },
             401: { description: 'Unauthorized' },
-            422: { description: 'Validation error' },
           },
         },
       },
@@ -242,7 +203,6 @@ A production-ready backend with:
           responses: {
             200: { description: 'Task retrieved' },
             404: { description: 'Task not found' },
-            401: { description: 'Unauthorized' },
           },
         },
         put: {
@@ -252,16 +212,11 @@ A production-ready backend with:
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
           requestBody: {
             required: true,
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/TaskUpdateInput' },
-              },
-            },
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/TaskUpdateInput' } } },
           },
           responses: {
             200: { description: 'Task updated successfully' },
             404: { description: 'Task not found' },
-            401: { description: 'Unauthorized' },
           },
         },
         delete: {
@@ -272,7 +227,6 @@ A production-ready backend with:
           responses: {
             200: { description: 'Task deleted successfully' },
             404: { description: 'Task not found' },
-            401: { description: 'Unauthorized' },
           },
         },
       },
