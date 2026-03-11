@@ -1,5 +1,4 @@
 const swaggerJsdoc = require('swagger-jsdoc');
-const path = require('path');
 
 const options = {
   definition: {
@@ -21,13 +20,6 @@ A production-ready backend with:
 2. Click **Authorize** and enter: \`Bearer <your_token>\`
 3. All protected routes will use this token automatically
       `,
-      contact: {
-        name: 'API Support',
-        email: 'support@taskmanager.dev',
-      },
-      license: {
-        name: 'MIT',
-      },
     },
     servers: [
       {
@@ -39,7 +31,6 @@ A production-ready backend with:
         description: 'Development server',
       },
     ],
-    
     components: {
       securitySchemes: {
         bearerAuth: {
@@ -49,9 +40,7 @@ A production-ready backend with:
           description: 'Enter your JWT token. Example: Bearer eyJhbGci...',
         },
       },
-      
       schemas: {
-        
         User: {
           type: 'object',
           properties: {
@@ -68,7 +57,7 @@ A production-ready backend with:
           properties: {
             name: { type: 'string', minLength: 2, maxLength: 50, example: 'Jane Doe' },
             email: { type: 'string', format: 'email', example: 'jane@example.com' },
-            password: { type: 'string', minLength: 6, example: 'secret123', description: 'Must contain at least one number' },
+            password: { type: 'string', minLength: 6, example: 'secret123' },
           },
         },
         LoginInput: {
@@ -93,23 +82,14 @@ A production-ready backend with:
             },
           },
         },
-        
         Task: {
           type: 'object',
           properties: {
             _id: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d2' },
             title: { type: 'string', example: 'Build login page' },
             description: { type: 'string', example: 'Create the user auth flow with JWT' },
-            status: {
-              type: 'string',
-              enum: ['pending', 'in-progress', 'completed'],
-              example: 'pending',
-            },
-            priority: {
-              type: 'string',
-              enum: ['low', 'medium', 'high'],
-              example: 'high',
-            },
+            status: { type: 'string', enum: ['pending', 'in-progress', 'completed'], example: 'pending' },
+            priority: { type: 'string', enum: ['low', 'medium', 'high'], example: 'high' },
             dueDate: { type: 'string', format: 'date-time', nullable: true },
             user: { type: 'string', example: '64f1a2b3c4d5e6f7a8b9c0d1' },
             createdAt: { type: 'string', format: 'date-time' },
@@ -137,42 +117,6 @@ A production-ready backend with:
             dueDate: { type: 'string', format: 'date', nullable: true },
           },
         },
-        TaskListResponse: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean', example: true },
-            data: {
-              type: 'object',
-              properties: {
-                tasks: { type: 'array', items: { $ref: '#/components/schemas/Task' } },
-                pagination: {
-                  type: 'object',
-                  properties: {
-                    total: { type: 'integer', example: 42 },
-                    page: { type: 'integer', example: 1 },
-                    limit: { type: 'integer', example: 10 },
-                    totalPages: { type: 'integer', example: 5 },
-                    hasNextPage: { type: 'boolean', example: true },
-                    hasPrevPage: { type: 'boolean', example: false },
-                  },
-                },
-              },
-            },
-          },
-        },
-        SingleTaskResponse: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean', example: true },
-            data: {
-              type: 'object',
-              properties: {
-                task: { $ref: '#/components/schemas/Task' },
-              },
-            },
-          },
-        },
-       
         ErrorResponse: {
           type: 'object',
           properties: {
@@ -204,9 +148,137 @@ A production-ready backend with:
       { name: 'Auth', description: 'User registration and authentication' },
       { name: 'Tasks', description: 'Task CRUD operations (all protected)' },
     ],
+    paths: {
+      '/api/users/register': {
+        post: {
+          summary: 'Register a new user',
+          tags: ['Auth'],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/RegisterInput' },
+              },
+            },
+          },
+          responses: {
+            201: { description: 'User registered successfully' },
+            409: { description: 'Email already in use' },
+            422: { description: 'Validation error' },
+          },
+        },
+      },
+      '/api/users/login': {
+        post: {
+          summary: 'Login and receive a JWT token',
+          tags: ['Auth'],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/LoginInput' },
+              },
+            },
+          },
+          responses: {
+            200: { description: 'Login successful' },
+            401: { description: 'Invalid credentials' },
+            422: { description: 'Validation error' },
+          },
+        },
+      },
+      '/api/users/me': {
+        get: {
+          summary: 'Get current authenticated user profile',
+          tags: ['Auth'],
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: { description: 'User profile retrieved' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/tasks': {
+        get: {
+          summary: 'Get all tasks for logged in user',
+          tags: ['Tasks'],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+            { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
+            { name: 'status', in: 'query', schema: { type: 'string', enum: ['pending', 'in-progress', 'completed'] } },
+            { name: 'priority', in: 'query', schema: { type: 'string', enum: ['low', 'medium', 'high'] } },
+          ],
+          responses: {
+            200: { description: 'Tasks retrieved successfully' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+        post: {
+          summary: 'Create a new task',
+          tags: ['Tasks'],
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/TaskInput' },
+              },
+            },
+          },
+          responses: {
+            201: { description: 'Task created successfully' },
+            401: { description: 'Unauthorized' },
+            422: { description: 'Validation error' },
+          },
+        },
+      },
+      '/api/tasks/{id}': {
+        get: {
+          summary: 'Get a single task by ID',
+          tags: ['Tasks'],
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: {
+            200: { description: 'Task retrieved' },
+            404: { description: 'Task not found' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+        put: {
+          summary: 'Update a task',
+          tags: ['Tasks'],
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/TaskUpdateInput' },
+              },
+            },
+          },
+          responses: {
+            200: { description: 'Task updated successfully' },
+            404: { description: 'Task not found' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+        delete: {
+          summary: 'Delete a task',
+          tags: ['Tasks'],
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: {
+            200: { description: 'Task deleted successfully' },
+            404: { description: 'Task not found' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+    },
   },
-  
-  apis: [path.join(__dirname, '../routes/*.js')],
+  apis: [],
 };
 
 const swaggerSpec = swaggerJsdoc(options);
